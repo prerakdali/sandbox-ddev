@@ -1,10 +1,10 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  ddev:
+  ddev-container:
     build: .
-    container_name: ddev-container
+    container_name: ddev_env
     tty: true
-    stdin_open: true
     volumes:
-      - ./integrations-core:/opt/integrations-core
+      - .:/workspace
+    working_dir: /workspace
