@@ -1,1 +1,10 @@
+version: '3.8'
 
+services:
+  ddev:
+    build: .
+    container_name: ddev-container
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./integrations-core:/opt/integrations-core
