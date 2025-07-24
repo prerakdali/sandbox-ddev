@@ -17,8 +17,9 @@ RUN apt-get update && \
     apt-get clean
 
 # Step 2: Create user and home dir
-RUN useradd -m -s /bin/bash ubuntu && \
+RUN id -u ubuntu &>/dev/null || useradd -m -s /bin/bash ubuntu && \
     echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
 
 USER ubuntu
 WORKDIR /home/ubuntu
