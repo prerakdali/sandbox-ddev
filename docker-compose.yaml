@@ -1,10 +1,16 @@
 version: "3.8"
 
 services:
-  ddev-container:
-    build: .
-    container_name: ddev_env
+  ddev-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ddev-dev
     tty: true
+    stdin_open: true
+    privileged: true
     volumes:
-      - .:/workspace
-    working_dir: /workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PATH=/home/ubuntu/.local/bin:$PATH
+    working_dir: /home/ubuntu/dd
