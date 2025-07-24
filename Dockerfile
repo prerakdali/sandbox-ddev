@@ -1,9 +1,8 @@
-FROM debian:bullseye
+# Dockerfile
+FROM python:3.8-slim
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    python3.8 \
-    python3.8-venv \
-    python3-pip \
     git \
     curl \
     wget \
@@ -11,15 +10,15 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
+# Upgrade pip and install ddev
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install ddev
 
-RUN python -m venv /opt/ddenv && \
-    /opt/ddenv/bin/pip install --upgrade pip setuptools wheel && \
-    /opt/ddenv/bin/pip install ddev
-
-ENV PATH="/opt/ddenv/bin:$PATH"
-
+# Optional: Clone the integrations-core repo for development
 WORKDIR /opt
 RUN git clone https://github.com/DataDog/integrations-core.git
 
-CMD [ "bash" ]
+# Add to PATH just in case
+ENV PATH="/root/.local/bin:$PATH"
+
+CMD ["bash"]
