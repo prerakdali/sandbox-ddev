@@ -25,7 +25,8 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
 # Install pipx with break-system-packages
 RUN python3 -m pip install --no-cache-dir pipx --break-system-packages && \
-    python3 -m pipx ensurepath --include-deps
+    python3 -m pipx ensurepath
+
 
 # Set environment variables
 ENV PATH="/root/.local/bin:${PATH}"
