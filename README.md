@@ -7,4 +7,7 @@ This repo provides a Docker environment with the [Datadog `ddev` tool](https://d
 ```bash
 git clone https://github.com/your-username/ddev-docker-env.git
 cd ddev-docker-env
-docker-compose up --build
+docker compose build
+docker compose up -d
+docker exec -it ddev-dev bash
+
