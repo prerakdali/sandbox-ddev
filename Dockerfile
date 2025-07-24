@@ -1,48 +1,60 @@
-FROM debian:bookworm-slim
+FROM ubuntu:24.04
 
-# Set noninteractive frontend
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install required system packages
+# Step 1: Install system tools and Python 3.12 + pip + venv
 RUN apt-get update && \
     apt-get install -y \
-    git \
+    software-properties-common \
     curl \
-    wget \
-    python3.11 \
-    python3.11-venv \
-    python3-pip \
-    bash \
     ca-certificates \
     gnupg \
-    lsb-release \
+    git \
     sudo \
-    docker.io \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    python3.12 \
+    python3.12-venv \
+    python3-pip && \
+    apt-get clean
 
-# Set python3.11 as default python
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+# Step 2: Create user and home dir
+RUN useradd -m -s /bin/bash ubuntu && \
+    echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-# Install pipx with break-system-packages
-RUN python3 -m pip install --no-cache-dir pipx --break-system-packages && \
-    python3 -m pipx ensurepath
+USER ubuntu
+WORKDIR /home/ubuntu
 
+# Step 3: Export paths and setup bashrc
+RUN echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 
-# Set environment variables
-ENV PATH="/root/.local/bin:${PATH}"
+# Step 4: Install pipx and ddev
+RUN python3.12 -m pip install --user pipx --break-system-packages && \
+    ~/.local/bin/pipx ensurepath && \
+    ~/.local/bin/pipx install "git+https://github.com/DataDog/integrations-core.git#subdirectory=ddev"
 
-# Clone required repositories
-RUN mkdir -p /opt && cd /opt && \
+# Step 5: Clone integrations-core and integrations-extras
+RUN mkdir -p /home/ubuntu/dd && cd /home/ubuntu/dd && \
     git clone https://github.com/DataDog/integrations-core.git && \
     git clone https://github.com/DataDog/integrations-extras.git
 
-# Install ddev using pipx and upgrade to latest
-RUN pipx install ddev && \
-    pipx upgrade ddev
+# Step 6: Configure ddev
+RUN /home/ubuntu/.local/bin/ddev config set core /home/ubuntu/dd/integrations-core && \
+    /home/ubuntu/.local/bin/ddev config set extras /home/ubuntu/dd/integrations-extras
 
-# Configure ddev with the cloned repos
-RUN ddev config set core /opt/integrations-core && \
-    ddev config set extras /opt/integrations-extras
+# Step 7: Install Docker
+USER root
+RUN install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+      gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    chmod a+r /etc/apt/keyrings/docker.gpg && \
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu noble stable" | \
+      tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin && \
+    usermod -aG docker ubuntu
 
-# Reload bashrc (if needed for future login shells)
-RUN echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+# Final step: switch back to non-root user
+USER ubuntu
+WORKDIR /home/ubuntu/dd
+ENV PATH="/home/ubuntu/.local/bin:$PATH"
+CMD ["/bin/bash"]
